@@ -51,7 +51,7 @@ This Python script allows you to send emails using the Simple Mail Transfer Prot
 
 1. Run the script:
    ```bash
-   python email_sender.py
+   python main.py
    ```
 2. If the script detects a `.env` file, it will load the configurations. Otherwise, it will prompt you to enter the necessary details.
 

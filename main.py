@@ -1,9 +1,8 @@
 import dotenv
 import os
 import smtplib, ssl
-from email.mime.text import MIMEText
-from email.mime.image import MIMEImage
-from email.mime.multipart import MIMEMultipart
+import re
+import dns.resolver
 
 try:
     dotenv.load_dotenv()
@@ -40,6 +39,72 @@ Subject: {subject}
 
 {content}
 """
+
+
+domain = re.split("@", sender)[1]
+print ("Testing domain", domain, "for DMARC record...")
+try:
+    test_dmarc = dns.resolver.resolve('_dmarc.' + domain , 'TXT')
+    for dns_data in test_dmarc:
+        if 'DMARC1' in str(dns_data):
+            print ("  [PASS] DMARC record found :",dns_data)
+            dmarc_sort = dict()
+            try:
+                dmarc_sort["p"] = re.findall('p=(.*?)[; \n]', str(dns_data))[0]
+                if dmarc_sort["p"].lower() == "quarantine":
+                    print("Warning: Your email will go to spam or be filtered")
+            except:
+                dmarc_sort["p"] = "null"
+                print("There seems to be something wrong with the `p` value")
+            try:
+                dmarc_sort["sp"] = re.findall('sp=(.*?)[; \n]', str(dns_data))[0]
+                if dmarc_sort["sp"] != dmarc_sort["p"]:
+                    print(f"the `sp` record is not the same as `p`. `sp: {dmarc_sort['sp']}")
+            except:
+                dmarc_sort["sp"] = dmarc_sort["p"]
+            try:
+                dmarc_sort["pct"] = re.findall('pct=(.*?)[; \n]', str(dns_data))[0]
+                if dmarc_sort["p"].lower() == "reject" and str(dmarc_sort["pct"]) == "100":
+                    print("The email will be rejected")
+                    exit()
+                else:
+                    print(f"There is a {dmarc_sort['pct']}% chance that the `p` policy will be enforced")
+            except:
+                dmarc_sort["pct"] = "100"
+                if dmarc_sort["p"].lower() == "reject":
+                    print("The email will be rejected")
+                    exit()
+            try:
+                dmarc_sort["fo"] = re.findall('fo=(.*?)[; \n]', str(dns_data))[0]
+                if "0" in dmarc_sort["fo"]:
+                    print("fo=0: Generate a DMARC failure report if all underlying authentication mechanisms (SPF and DKIM) fail to produce an aligned “pass” result.")
+                if "1" in dmarc_sort["fo"]:
+                    print("fo=1: Generate a DMARC failure report if any underlying authentication mechanism (SPF or DKIM) produced something other than an aligned “pass” result.")
+                if "d" in dmarc_sort["fo"]:
+                    print("fo=d: Generate a DKIM failure report if the message had a signature that failed evaluation, regardless of its alignmen")
+                if "s" in dmarc_sort["fo"]:
+                    print("fo=s: Generate an SPF failure report if the message failed SPF evaluation, regardless of its alignment.")
+            except:
+                dmarc_sort["fo"] = "0"
+                print("fo=0: Generate a DMARC failure report if all underlying authentication mechanisms (SPF and DKIM) fail to produce an aligned “pass” result. (Default)")
+            try:
+                dmarc_sort["ruf"] = re.findall('ruf=(.*?)[; \n]', str(dns_data))[0]
+                print(f"ruf: {dmarc_sort['ruf']}")
+            except:
+                dmarc_sort["ruf"] = "none"
+            try:
+                dmarc_sort["rua"] = re.findall('rua=(.*?)[; \n]', str(dns_data))[0]
+                print(f"rua: {dmarc_sort['rua']}")
+            except:
+                dmarc_sort["rua"] = "none"
+
+            print(dmarc_sort)
+except:
+    print ("  [FAIL] DMARC record not found.")
+    pass
+
+if input("Considering this information, would you still like to continue? (Y/N)\n>").lower() == "n":
+    exit()
 
 try:
     context = ssl.create_default_context()

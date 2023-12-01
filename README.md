@@ -10,6 +10,7 @@ This Python script allows you to send emails using the Simple Mail Transfer Prot
 2. **Dependencies**: Install the required dependencies using the following command:
    ```bash
    pip install python-dotenv
+   pip install dnspython
    ```
 
 ## Setup

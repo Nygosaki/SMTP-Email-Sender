@@ -10,9 +10,6 @@ try:
     smtpSeverPort = os.getenv("SMTPSERVERPORT")
     smtpServerUser = os.getenv("SMTPSERVERUSER")
     smtpServerToken = os.getenv("SMTPSERVERTOKEN")
-    sender = os.getenv("SENDER")
-    senderName = os.getenv("SENDERNAME")
-    reciever = os.getenv("RECIEVER")
 except:
     print("A .env file was not found. Presets have not been loaded.")
     smtpSever = input("What is your origin SMTP serve?\n>")

@@ -3,6 +3,7 @@ import os
 import smtplib, ssl
 import re
 import dns.resolver
+from email.message import EmailMessage
 
 try:
     dotenv.load_dotenv()
@@ -23,6 +24,7 @@ try:
     reciever = os.getenv("RECIEVER")
     subject = os.getenv("SUBJECT")
     content = os.getenv("CONTENT")
+    replyto = os.getenv("REPLYTO")
 except:
     print("Per-Email variables have not been defined in the .env file. Presets have not been loaded.")
     sender = input("What is the sender email address?\n>")
@@ -30,12 +32,14 @@ except:
     reciever = input("Who is the recipient? If there are multiple, seperate them with ;. \nEx: admin@example.com;user@example2.com\n>")
     subject = input("What is the subject of the email?\n>")
     content = input("What would you like the body of the email to contain?\n>")
+    replyto = input("What email adress would you like email clients to automatically reply to when a user clicks 'reply' to the email?\n>")
 
-message = f"""From: {senderName} <{sender}>
-Subject: {subject}
-
-{content}
-"""
+em = EmailMessage()
+em['From'] = f"{senderName} <{sender}>"
+em['To'] = reciever
+em['Subject'] = subject
+em['Reply-To'] = replyto
+em.set_content(content)
 
 
 domain = re.split("@", sender)[1]
@@ -44,7 +48,7 @@ try:
     test_dmarc = dns.resolver.resolve('_dmarc.' + domain , 'TXT')
     for dns_data in test_dmarc:
         if 'DMARC1' in str(dns_data):
-            print ("  [PASS] DMARC record found :",dns_data)
+            print ("DMARC record found :",dns_data)
             dmarc_sort = dict()
             try:
                 dmarc_sort["p"] = re.findall('p=(.*?)[; \n]', str(dns_data))[0]
@@ -97,7 +101,7 @@ try:
 
             print(dmarc_sort)
 except:
-    print ("  [FAIL] DMARC record not found.")
+    print ("DMARC record not found.")
     pass
 
 if input("Considering this information, would you still like to continue? (Y/N)\n>").lower() == "n":
@@ -110,7 +114,7 @@ try:
         server.starttls(context=context)
         server.ehlo()  # Can be omitted
         server.login(smtpServerUser, smtpServerToken)
-        server.sendmail(sender, reciever, message)
+        server.send_message(em, sender, reciever)
     print('Email sent!')
 except Exception as exception:
     print("Error: %s!\n\n" % exception)

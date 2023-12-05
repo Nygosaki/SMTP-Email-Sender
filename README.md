@@ -43,6 +43,7 @@ This Python script allows you to send emails using the Simple Mail Transfer Prot
    RECIEVER="your_receiver_email"
    SUBJECT="your_email_subject"
    CONTENT="your_email_content"
+   REPLYTO="email_adress_replies_go_to"
    ```
    Replace the placeholder values with your actual SMTP server details, email addresses, and other parameters.     
    This is not neccesary, though without it, you will be asked to reenter the details every time.     
